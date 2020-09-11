@@ -38,28 +38,28 @@ def cal_loss(cls_true, loc_true, cls_pred, loc_pred):
 
     """
 
-    batch_positive_num = tf.math.count_nonzero(tf.greater(cls_true, 0), axis=-1)
-    batch_negative_num = tf.math.count_nonzero(tf.equal(cls_true, 0), axis=-1)
-    batch_negative_select_num = tf.math.minimum(batch_negative_num, batch_positive_num * c.hard_mining_ratio)
+    positive_num = tf.math.count_nonzero(tf.greater(cls_true, 0), axis=-1)
+    negative_num = tf.math.count_nonzero(tf.equal(cls_true, 0), axis=-1)
+    negative_select_num = tf.math.minimum(negative_num, positive_num * c.hard_mining_ratio)
 
-    batch_positive_mask = tf.greater(cls_true, 0)
+    positive_mask = tf.greater(cls_true, 0)
 
     # hard negative mining for classification
-    batch_negative_mask = tf.equal(cls_true, 0)
+    negative_mask = tf.equal(cls_true, 0)
     bg_pred = cls_pred[:, :, 0]
-    bg_pred_for_negative = tf.where(batch_negative_mask,
+    bg_pred_for_negative = tf.where(negative_mask,
                                     0.0 - bg_pred,
                                     0.0 - tf.ones_like(bg_pred))  # ignore the positive anchors
     topk_bg_pred, _ = tf.nn.top_k(bg_pred_for_negative, k=tf.shape(bg_pred_for_negative)[1])
     topk_threshold = tf.gather_nd(topk_bg_pred,
-                                  tf.stack([tf.range(c.batch_size, dtype=tf.int64), batch_negative_select_num - 1],
+                                  tf.stack([tf.range(c.batch_size, dtype=tf.int64), negative_select_num - 1],
                                            axis=-1))
-    batch_negative_mask = tf.greater_equal(bg_pred_for_negative, tf.expand_dims(topk_threshold, axis=-1))
+    negative_mask = tf.greater_equal(bg_pred_for_negative, tf.expand_dims(topk_threshold, axis=-1))
 
-    batch_mask = tf.logical_or(batch_positive_mask, batch_negative_mask)
+    mask = tf.logical_or(positive_mask, negative_mask)
 
-    flaten_cls_true_masked = tf.reshape(tf.boolean_mask(cls_true, batch_mask), [-1])
-    flaten_cls_pred_masked = tf.reshape(tf.boolean_mask(cls_pred, batch_mask), [-1, c.class_num])
+    flaten_cls_true_masked = tf.reshape(tf.boolean_mask(cls_true, mask), [-1])
+    flaten_cls_pred_masked = tf.reshape(tf.boolean_mask(cls_pred, mask), [-1, c.class_num])
 
     accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.cast(flaten_cls_true_masked, dtype=tf.int32),
                                                tf.cast(tf.argmax(flaten_cls_pred_masked, axis=-1), dtype=tf.int32)),
@@ -68,8 +68,8 @@ def cal_loss(cls_true, loc_true, cls_pred, loc_pred):
     # mean for positive anchor num
     cls_loss = cross_entropy(flaten_cls_true_masked, flaten_cls_pred_masked) * (c.hard_mining_ratio + 1)
 
-    flaten_loc_true_masked = tf.reshape(tf.boolean_mask(loc_true, batch_positive_mask), [-1, 4])
-    flaten_loc_pred_masked = tf.reshape(tf.boolean_mask(loc_pred, batch_positive_mask), [-1, 4])
+    flaten_loc_true_masked = tf.reshape(tf.boolean_mask(loc_true, positive_mask), [-1, 4])
+    flaten_loc_pred_masked = tf.reshape(tf.boolean_mask(loc_pred, positive_mask), [-1, 4])
 
     # mean for positive anchor num
     loc_loss = smooth_l1(flaten_loc_true_masked, flaten_loc_pred_masked) * 4

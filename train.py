@@ -5,7 +5,7 @@ from model.SSD import SSD
 from tqdm import tqdm
 from utils.data_utils import get_train_data_iterator
 from utils.loss_utils import cal_loss, l2_loss
-os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
 class CosineDecayWithWarmUP(tf.keras.experimental.CosineDecay):

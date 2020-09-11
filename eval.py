@@ -7,7 +7,7 @@ from utils.anchor_utils import from_offset_to_box, generate_anchors
 from utils.eval_utils import voc_eval
 from utils.data_utils import get_test_data_iterator, load_annotation
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
 @tf.function

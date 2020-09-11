@@ -8,10 +8,10 @@ from model.SSD import SSD
 from utils.eval_utils import show_box
 from utils.aug_utils import color_normalize
 from utils.anchor_utils import generate_anchors, from_offset_to_box
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 model_path = c.weight_file
-image_path = '/home/user/Documents/dataset/VOC/VOC2007TEST/JPEGImages/000388.jpg'
+image_path = '/home/user/Documents/dataset/VOC/VOC2007TEST/JPEGImages/008058.jpg'
 
 
 if __name__ == '__main__':
@@ -29,7 +29,8 @@ if __name__ == '__main__':
     cls_pred, loc_pred = model(input_image, training=False)
 
     anchors = generate_anchors()
-    boxes, scores, labels = from_offset_to_box(loc_pred[0], cls_pred[0], anchors, score_threshold=0.1)
+    boxes, scores, labels = from_offset_to_box(loc_pred[0], cls_pred[0], anchors,
+                                               anchor_belongs_to_one_class=True, score_threshold=0.1)
 
     for box, score, label in zip(boxes, scores, labels):
         box[0] = box[0] / c.input_shape[1] * width  # left
